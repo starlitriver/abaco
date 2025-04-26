@@ -1,0 +1,41 @@
+name: Build TNS
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential zlib1g-dev
+
+      - name: Build Luna
+        run: |
+          git clone --depth 1 https://github.com/ndless-nspire/Luna
+          cd Luna
+          make -j$(nproc)
+          echo "$(pwd)" >> "$GITHUB_PATH"  # add Luna binary dir to PATH
+
+      - name: Extract Abaco version
+        id: version
+        shell: bash
+        run: |
+          ver=$(grep -Po 'Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+' abaco.py)
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Create TNS with Luna
+        run: |
+          luna abaco.py absco-${{ steps.version.outputs.version }}.tns
+
+      - name: Upload compiled TNS
+        uses: actions/upload-artifact@v4
+        with:
+          name: absco-tns-${{ steps.version.outputs.version }}
+          path: absco-${{ steps.version.outputs.version }}.tns
