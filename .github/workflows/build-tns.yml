@@ -1,8 +1,9 @@
-name: Build TNS
+name: Build and Release Abaco TNS
+
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,31 +12,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Install build prerequisites
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential zlib1g-dev
 
-      - name: Build Luna
+      - name: Clone & compile Luna
         run: |
           git clone --depth 1 https://github.com/ndless-nspire/Luna
           cd Luna
-          make -j$(nproc)
-          echo "$(pwd)" >> "$GITHUB_PATH"  # add Luna binary dir to PATH
+          make
 
-      - name: Extract Abaco version
+      - name: Extract version from abaco.py
         id: version
-        shell: bash
         run: |
-          ver=$(grep -Po 'Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+' abaco.py)
-          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          VERSION=$(grep -E '^Version:' abaco.py | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create TNS with Luna
+      - name: Build TNS file
         run: |
-          luna abaco.py absco-${{ steps.version.outputs.version }}.tns
+          ./Luna/luna abaco.py absco-${{ steps.version.outputs.version }}.tns
 
-      - name: Upload compiled TNS
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release & upload asset
+        uses: softprops/action-gh-release@v2
         with:
-          name: absco-tns-${{ steps.version.outputs.version }}
-          path: absco-${{ steps.version.outputs.version }}.tns
+          tag_name: v${{ steps.version.outputs.version }}
+          name: "Abaco v${{ steps.version.outputs.version }}"
+          body: "Auto‑generated TI‑Nspire MicroPython library build."
+          files: absco-${{ steps.version.outputs.version }}.tns
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
