@@ -41,7 +41,7 @@ try:
 except ImportError:
     ti_plotlib = None  # type: ignore
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = []
 
 # internal decorator to auto‑register public API
@@ -63,18 +63,38 @@ def safe_div(a, b, default=None):
 
 # ─────────────────────────────── algebra ─────────────────────────────────────
 @_register
-def quad(a, b, c):
+def quad(a: float, b: float, c: float):
     """
-    Solve ax² + bx + c = 0.
-    Returns (root1, root2, discriminant) or None if complex.
+    quad_info(a, b, c) → dict
+
+    Returns every key fact about y = ax² + bx + c:
+        • 'axis'         – x-coordinate of axis of symmetry
+        • 'disc'         – discriminant (∆)
+        • 'roots'        – tuple of real/complex roots (r1, r2)  (None if a = 0)
+        • 'vertex'       – (x_v, y_v) coordinates of the vertex
     """
-    disc = b*b - 4*a*c
-    if disc < 0:
-        return None
-    d = disc ** 0.5
-    return ((-b + d) / (2*a), (-b - d) / (2*a), disc)
+    if a == 0:
+        return {
+            'axis': None,
+            'disc': None,
+            'roots': None,
+            'vertex': None,
+        }
 
+    axis = -b / (2 * a)
+    disc = b * b - 4 * a * c
+    # complex support works fine on-calc (cmath not needed for basic √ of negative)
+    root_disc = disc**0.5 if disc >= 0 else (-disc)**0.5 * 1j
+    r1 = (-b + root_disc) / (2 * a)
+    r2 = (-b - root_disc) / (2 * a)
+    y_v = a * axis * axis + b * axis + c
 
+    return {
+        'axis': axis,
+        'disc': disc,
+        'roots': (r1, r2),
+        'vertex': (axis, y_v),
+    }
 # ────────────────────────────── calculus ─────────────────────────────────────
 @_register
 def diff(f, x, h=1e-4):
