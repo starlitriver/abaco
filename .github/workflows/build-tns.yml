@@ -26,7 +26,7 @@ jobs:
       - name: Extract version from abaco.py
         id: version
         run: |
-          VERSION=$(grep -E '__version__ = "' abaco.py | awk '{print $3}')
+          VERSION=$(awk -F '"' '/^__version__ = / {print $2}' abaco.py)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build TNS file.
