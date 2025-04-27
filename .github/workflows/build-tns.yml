@@ -31,7 +31,7 @@ jobs:
 
       - name: Build TNS file.
         run: |
-          ./Luna/luna abaco.py absco-${{ steps.version.outputs.version }}.tns
+          ./Luna/luna abaco.py abaco-${{ steps.version.outputs.version }}.tns
 
       - name: Create release and upload asset.
         uses: softprops/action-gh-release@v2
