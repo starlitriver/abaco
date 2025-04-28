@@ -1,161 +1,70 @@
-"""
-abaco ~ https://github.com/starlitriver/abaco
-"""
-__version__ = "0.1.4"
+from math import *
+def f(x):
+    return float(1/x+sin(x))
 
-## Chapter 0. Housekeeping.
-import math, cmath, random, time
-try:
-    import ti_system, ti_plotlib
-except ImportError: 
-    pass
+a=1
+b=4
 
-pi = math.pi
-e = math.e
+def bisect(tolerance=0.0001, max_iterations=100):
+    global a,b
+    a=float(a)
+    b=float(b)
+    # Initial setup and validation
+    print("Interval [a,b] is [%.1f, %.1f], Tolerance: %f, Max Iter: %d" % (a, b, tolerance, max_iterations))
+    print()
 
+    fa = f(a)
+    fb = f(b)
 
-supported_characters="π α β ∞ ∑ − ± × ÷ √ ∫ © ® ∈ △ ∴ ≠ ⊆ ⊂ ⊥ ⊙ ² ³ ≤ ≥ • ∏ σ τ ∘ ⊥ ⊙"
+    # Ensure the function has opposite signs at the endpoints
+    if fa * fb >= 0:
+        print("Error: Function must have opposite signs at interval endpoints.")
+        print("f(%.6f) = %.6f" % (a, fa))
+        print("f(%.6f) = %.6f" % (b, fb))
+        return
 
+    # Initialize variables for the iteration loop
+    current_a = a
+    current_b = b
+    iteration_count = -1
 
-__all__ = []
+    # Initial midpoint and function value at midpoint for first row
+    m_init = (current_a + current_b) / 2
+    fm_init = f(m_init)
 
-def _register(obj):
-    __all__.append(obj.__name__)
-    return obj
+    # Print table header
+    print("%-8s %-8s %-8s %-8s %-8s %-8s %-8s" % ("Pass", "a", "m", "b", "f(a)", "f(m)", "f(b)"))
+    print()
 
+    # Start the bisection iteration loop
+    while (current_b - current_a) / 2 > tolerance and iteration_count < max_iterations:
+        iteration_count += 1
+        root_approx = (current_a + current_b) / 2
+        f_mid = f(root_approx)
+        f_current_a = f(current_a)
+        f_current_b = f(current_b)
 
+        # Print the details of the current iteration
+        print("%-8d %-10.4f %-10.4f %-10.4f %-12.6f %-12.6f %-12.6f" % \
+              (iteration_count, current_a, root_approx, current_b, f_current_a, f_mid, f_current_b))
 
-## Chapter 1. Algebra.
-
-def q(*coefficients):
-    if len(coefficients) != 3:
-        raise ValueError("Needs 3 coefficients like quad(a, b, c).")
-
-    # Unpack coefficients
-    a, b, c = coefficients
-
-    # Calculate the discriminant using cmath (it automatically handles negative discriminant)
-    discriminant = cmath.sqrt(b**2 - 4*a*c) 
-    discriminant = discriminant.real if discriminant.imag == 0 else discriminant
-
-    # Calculate the roots using the quadratic formula
-    root1 = (-b + discriminant) / (2*a)
-    root2 = (-b - discriminant) / (2*a)
-
-    # Check and remove the imaginary part if it's zero
-    root1 = root1.real if root1.imag == 0 else root1
-    root2 = root2.real if root2.imag == 0 else root2
-    roots = (root1, root2)
-
-    # Calculate the vertex
-    vertex_x = -b / (2*a)
-    vertex_y = (4*a*c - b**2) / (4*a)
-    vertex = (vertex_x, vertex_y)
-
-    # Root Form: f(x) = a(x - r1)(x - r2)
-    if all(isinstance(root, complex) and root.imag != 0 for root in roots):
-        root1 = "{} + {}j".format(root1.real, root1.imag)
-        root2 = "{} + {}j".format(root2.real, root2.imag)
-
-    # Output the results
-    print("f(x) = {}x^2 + {}x + {}".format(a, b, c))
-    print("  Root form ~ f(x) = {}(x - root1)(x - root2)".format(a))
-    print("  Discriminant =", discriminant)
-    print("  Roots =",root1,"and",root2)
-    print("  TP (h,k) =", vertex)
-    
-
-
-
-def mean(*data):
-    if iter(data) is data:
-        data = list(data)
-    return sum(data)/len(data)
-
-def harmonic_mean(*data):
-    if iter(data) is data:
-        data = list(data)
-    return len(data)/sum([1/x for x in data])
-
-def median(*data):
-    data = sorted(data)
-    n = len(data)
-    if n % 2 == 1:
-        return data[n//2]
-    else:
-        i = n//2
-        return (data[i - 1] + data[i])/2
-
-def median_low(*data):
-    data = sorted(data)
-    n = len(data)
-    if n % 2 == 1:
-        return data[n//2]
-    else:
-        return data[n//2 - 1]
-
-def median_high(*data):
-    data = sorted(data)
-    n = len(data)
-    return data[n//2]
-
-def median_grouped(*data, interval=1):
-    data = sorted(data)
-    n = len(data)
-    x = data[n//2]
-    L = x - interval/2
-    l1 = l2 = n//2
-    while (l1 > 0) and (data[l1 - 1] == x):
-        l1 -= 1
-    while (l2 < n) and (data[l2 + 1] == x):
-        l2 += 1
-    return L + (interval*(n/2 - l1)/(l2 - l1 + 1))
-        
-def mode(*data):
-    if iter(data) is data:
-        data = list(data)
-    data = sorted(data)
-    last = modev = None
-    countmax = i = 0
-    while i < len(data):
-        if data[i] == last:
-            count += 1
+        # Update the interval based on the sign of f(m)
+        if f_current_a * f_mid < 0:
+            current_b = root_approx
         else:
-            count = 1
-            last = data[i]
-        if count > countmax:
-            countmax = count
-            modev = last
-        i += 1
-    return modev
+            current_a = root_approx
 
-def _ss(*data, c=None):
-    if c is None:
-        c = mean(data)
-    total = total2 = 0
-    for x in data:
-        total += (x - c)**2
-        total2 += (x - c) 
-    total -= total2**2/len(data)
-    return total
+    # Final results
+    print()
+    final_approx = (current_a + current_b) / 2
+    if (current_b - current_a) / 2 <= tolerance:
+        print("Method converged successfully to tolerance %f in %d iterations." % (tolerance, iteration_count))
+    else:
+        print("Maximum iterations (%d) reached before achieving tolerance %f." % (max_iterations, tolerance))
 
-def variance(*data, xbar=None):
-    if iter(data) is data:
-        data = list(data)
-    return _ss(data, xbar)/(len(data) - 1)
+    print("Approximate root is: %.6f" % final_approx)
+    print("Function value at approx: f(%.6f) = %.6f" % (final_approx, f(final_approx)))
+    print("Final interval: [%.6f, %.6f]" % (current_a, current_b))
+    print("Final interval width: %.6f" % (current_b - current_a))
 
-def pvariance(*data, mu=None):
-    if iter(data) is data:
-        data = list(data)
-    return _ss(data, mu)/len(data)
-
-def stdev(*data, xbar=None):
-    return math.sqrt(variance(data, xbar))
-
-def pstdev(*data, mu=None):
-    return math.sqrt(pvariance(data, mu))
-
-
-assert 1+1==2
-
-print("Abaco {} is ready!".format(__version__))
+bisect()
